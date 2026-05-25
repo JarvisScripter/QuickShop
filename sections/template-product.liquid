@@ -49,6 +49,7 @@
         </div>
         <div class="product--information sticky top-5 p-2">
             {% form 'product', product %}
+                <input type="hidden" name="id" value="{{ selected_variant.id }}" class="product-variant-id">
                 {% for block in section.blocks %}
                     {% case block.type %}
                         {% when 'vendor' %}
@@ -206,18 +207,10 @@
 
             if (variant) {
                 // Update hidden input with correct variant ID
-                let form = document.querySelector('form');
-                
-                // Remove old hidden input if it exists
-                const oldInput = form.querySelector('input[name="id"]');
-                if (oldInput) oldInput.remove();
-                
-                // Add new hidden input with correct variant ID
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'id';
-                input.value = variant.id;
-                form.appendChild(input);
+                const variantIdInput = document.querySelector('.product-variant-id');
+                if (variantIdInput) {
+                    variantIdInput.value = variant.id;
+                }
 
                 // Update price display
                 const priceSpan = document.querySelector('.product-price');
