@@ -1,0 +1,39 @@
+<div class="p-8">
+    <a href="{{ routes.collections_url }}" class="text-gray-500 hover:underline text-center block mb-4">Back to Collections</a>
+    {% paginate collection.products by section.settings.products_per_page %}
+        <h1 class="text-gray-900 text-3xl font-semibold text-center"> {{ collection.title }}</h1>
+         <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                {% for product in collection.products %}
+                    {% render 'product-card', product:product %}
+                {% else %}
+                    There are no products inside this collection.
+                {% endfor %}
+            </div>
+        </div>
+        {% if paginate.pages > 1 %}
+            {% render 'pagination', paginate:paginate %}            
+        {% endif %}
+    {% endpaginate %}
+</div>
+
+
+{% schema %}
+{
+    "name": "Template collection",
+    "settings": [
+            {
+                "type": "number",
+                "id": "products_per_page",
+                "label": "Products per page",
+                "default": 6
+            },
+            {
+                "type": "checkbox",
+                "id": "show_vendor",
+                "label": "Show product vendor",
+                "default": true
+            }
+        ]
+}
+{% endschema %}

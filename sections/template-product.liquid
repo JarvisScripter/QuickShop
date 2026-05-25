@@ -1,0 +1,293 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.css"/>
+<script src="https://cdn.jsdelivr.net/npm/swiper@12/swiper-bundle.min.js" defer></script>
+{% assign selected_variant = product.selected_or_first_available_variant %}
+<style>
+
+    .swiper-pagination {
+        bottom: 0 !important;
+    }
+    .swiper-pagination-bullet-active {
+        color: #000 !important;
+        background: #000 !important;
+    }
+    .swiper-button-prev,
+    .swiper-button-next {
+        top: auto !important;
+        color: #000;
+        height: 20px;
+    }
+    .product--information{
+        height: fit-content;
+    }
+</style>
+
+
+<div class="max-w-7xl mx-auto my-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="product--medias">
+            <div class="hidden md:block">
+                {% for media in product.media %}
+                    {% render 'product-media', media: media %}
+                {% endfor %}
+            </div>
+            <div class="md:hidden">
+                <div class="swiper h-96 w-full">
+                    <div class="swiper-wrapper">
+                        {% for media in product.media %}
+                            <div class="swiper-slide flex items-center justify-center">
+                                <div class="w-full h-96 overflow-hidden p-2">
+                                    {% render 'product-media', media: media %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="swiper-pagination"></div>
+                    <div class="swiper-button-prev"></div>
+                    <div class="swiper-button-next"></div>
+                </div>
+            </div>
+        </div>
+        <div class="product--information sticky top-5 p-2">
+            {% form 'product', product %}
+                {% for block in section.blocks %}
+                    {% case block.type %}
+                        {% when 'vendor' %}
+                            <div class="my-3" {{ block.shopify_attributes }}>
+                                <span class="text-xs text-gray-500">
+                                    {{ product.vendor }}
+                                </span>
+                            </div>
+
+                        {% when 'title' %}
+                            <div class="my-3" {{ block.shopify_attributes }}>
+                                <h1 class="text-3xl text-gray-900">
+                                    {{ product.title }}
+                                </h1>
+                            </div>
+
+                        {% when 'price' %}
+                            <div class="my-3 product-price-container" {{ block.shopify_attributes }}>
+                                <span class="text-base text-gray-900 product-price">
+                                    {{ selected_variant.price | money }}
+                                </span>
+                                <span class="text-sm text-gray-500 line-through product-compare-price">
+                                    {{ selected_variant.compare_at_price | money }}
+                                </span>
+
+                                {% if selected_variant.price < selected_variant.compare_at_price %}
+                                    <span class="px-5 py-1 text-sm font-bold text-white bg-red-500 rounded-full mx-4 product-sale-badge">
+                                        Sale
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                        {% when 'variant_selector' %}
+                            <div class="my-3" {{ block.shopify_attributes }}>
+                                {% unless product.has_only_default_variant %}
+                                    <div data-url="{{ product.url }}" data-product-id="{{ product.id }}" data-section="{{ section.id }}" class="options-wrapper">
+                                        {% for option in product.options_with_values %}
+                                            <div class="mb-4">
+                                                <label for="option-{{ section.id }}-{{ forloop.index }}" class="block text-sm font-medium text-gray-700 mb-1">
+                                                    {{ option.name }}
+                                                </label>
+                                                <select id="option-{{ section.id }}-{{ forloop.index }}" name="options[{{ option.name |  escape }}]" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-2 py-2">
+                                                    {% for value in option.values %}
+                                                        <option 
+                                                            value="{{ value |  escape }}"
+                                                            {% if option.selected_value == value %}
+                                                                selected="selected"
+                                                            {% endif %}
+                                                        >
+                                                            {{ value }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% endunless %}
+                            </div>
+
+                        {% when 'quantity' %}
+                            <div class="my-3" {{ block.shopify_attributes }}>
+                                <label for="Quantity-{{ section.id }}">Quantity</label>
+                                <input type="number" id="Quantity-{{ section.id }}" name="quantity" value="1" min="1" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm px-2 py-2">
+                            </div>
+
+                        {% when 'description' %}
+                            <div class="my-3" {{ block.shopify_attributes }}>
+                                <p class="text-gray-700">
+                                    {{ product.description }}
+                                </p>
+                            </div>
+                    {% endcase %}
+                {% endfor %}
+
+                <div class="my-3">
+                    <button type="submit" name="add" class="w-full bg-gray-900 text-white py-3 rounded-md hover:bg-gray-600 transition-colors"
+                        {% if selected_variant.available == false %}
+                            disabled
+                        {% endif %}
+                    >
+                        {% if selected_variant.available == false %}
+                            Sold out
+                        {% else %}
+                            Add to Cart
+                        {% endif %}
+                    </button>
+                </div>
+            {% endform %}
+        </div>
+    </div>
+</div>
+
+
+<script>
+    const productData = {{ product | json }};
+    const moneyFormat = {{ shop.money_format | json }};
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initSwiper);
+        document.addEventListener('DOMContentLoaded', initVariantSelector);
+    } else {
+        initSwiper();
+        initVariantSelector();
+    }
+
+    function initSwiper() {
+        const swiper = new Swiper(".swiper", {
+            modules: [Swiper.Pagination, Swiper.Navigation],
+            direction: "horizontal",
+            pagination: {
+                el: ".swiper-pagination",
+                clickable: true,
+            },
+            navigation: {
+                prevEl: ".swiper-button-prev",
+                nextEl: ".swiper-button-next",
+            },
+            loop: true,
+        })
+    }
+
+    function formatMoney(cents, format) {
+        const amount = (cents / 100).toFixed(2);
+        return format.replace('{' + '{amount}}', amount);
+    }
+
+    function initVariantSelector() {
+        const selects = document.querySelectorAll('select[name^="options"]');
+        const submitButton = document.querySelector('button[type="submit"]');
+        
+        selects.forEach(select => {
+            select.addEventListener('change', updateVariant);
+        });
+
+        function updateVariant() {
+            const selectedOptions = {};
+            const optionNames = [];
+            
+            selects.forEach(select => {
+                const match = select.name.match(/options\[(.*?)\]/);
+                if (match) {
+                    const optionName = match[1];
+                    selectedOptions[optionName] = select.value;
+                    optionNames.push(optionName);
+                }
+            });
+
+            // Find variant by matching all selected options
+            const variant = productData.variants.find(v => {
+                return optionNames.every(optionName => {
+                    const optionIndex = productData.options.findIndex(opt => opt === optionName);
+                    return optionIndex >= 0 && v.options[optionIndex] === selectedOptions[optionName];
+                });
+            });
+
+            if (variant) {
+                // Update hidden input with correct variant ID
+                let form = document.querySelector('form');
+                
+                // Remove old hidden input if it exists
+                const oldInput = form.querySelector('input[name="id"]');
+                if (oldInput) oldInput.remove();
+                
+                // Add new hidden input with correct variant ID
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'id';
+                input.value = variant.id;
+                form.appendChild(input);
+
+                // Update price display
+                const priceSpan = document.querySelector('.product-price');
+                const comparePriceSpan = document.querySelector('.product-compare-price');
+                const saleBadge = document.querySelector('.product-sale-badge');
+                
+                if (priceSpan) {
+                    const formattedPrice = formatMoney(variant.price, moneyFormat);
+                    priceSpan.textContent = formattedPrice;
+                }
+
+                // Update compare price (sale price)
+                if (comparePriceSpan && variant.compare_at_price && variant.compare_at_price > 0) {
+                    const formattedComparePrice = formatMoney(variant.compare_at_price, moneyFormat);
+                    comparePriceSpan.textContent = formattedComparePrice;
+                    comparePriceSpan.style.display = 'inline';
+                } else if (comparePriceSpan) {
+                    comparePriceSpan.style.display = 'none';
+                }
+
+                // Show/hide sale badge
+                if (saleBadge) {
+                    if (variant.compare_at_price && variant.price < variant.compare_at_price) {
+                        saleBadge.style.display = 'inline-block';
+                    } else {
+                        saleBadge.style.display = 'none';
+                    }
+                }
+
+                // Update button availability
+                if (!variant.available) {
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Sold out';
+                } else {
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Add to Cart';
+                }
+            }
+        }
+    }
+</script>
+
+{% schema %}
+{
+    "name": "Product",
+    "blocks": [
+        {
+            "type": "vendor",
+            "name": "Vendor"
+        },
+        {
+            "type": "title",
+            "name": "Title"
+        },
+        {
+            "type": "price",
+            "name": "Price"
+        },
+        {
+            "type": "variant_selector",
+            "name": "Variant Selector"
+        },
+        {
+            "type": "quantity",
+            "name": "Quantity"
+        },
+        {
+            "type": "description",
+            "name": "Description"
+        }
+    ]
+}
+{% endschema %}

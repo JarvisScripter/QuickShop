@@ -1,0 +1,11 @@
+{
+    "name": "Template 404",
+    // "layout": "", optional, if not specified, it will use the default layout
+    "wrapper": "div#404_template",
+    "sections": {
+        "template-404":{
+            "type": "template-404"
+        }
+    },
+    "order": ["template-404"]
+}
